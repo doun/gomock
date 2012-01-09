@@ -26,11 +26,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/dsymonds/gomock/generate"
 	"io"
 	"log"
 	"reflect"
+	"text/template"
 )
 
 const (
@@ -76,22 +76,40 @@ func main() {
 
 type templateArg struct {
 	pkg string
-	interfaceNames string
+	interfaceNames []string
 	outputPkg string
 }
 
 func main() {
 	flag.Parse()
 
-	// TODO(jacobsa): Pay attention to the package and interface arguments.
-	var someReaderPtr *io.Reader
-	readerType := reflect.TypeOf(someReaderPtr).Elem()
-	types := []reflect.Type{readerType}
+	// Turn off dates in logging output.
+	log.SetFlags(0)
 
-	output, err := generate.GenerateMockSource("mock_io", types)
-	if err != nil {
-		log.Fatalf("%v", err)
+	// Parse the command-line args.
+	if flag.NArg() < 2 {
+		log.Fatal("Usage: mockgen <package> interface [...]")
 	}
 
-	fmt.Print(output)
+	arg := &templateArg{
+		pkg: flag.Arg(0)
+		interfaceNames: make([]string, flag.NArg-1),
+		outputPkg: "mock_" + flag.Arg(0)
+	}
+
+	// Handle non-standard package names.
+	if packageOut != "" {
+		arg.outputPkg = packageOut
+	}
+
+	// Copy interface names.
+	for i := 1; i < flag.NArg(); i++ {
+		arg.interfaceNames[i-1] = flag.Arg(i)
+	}
+
+	// Parse the generated code template, and run it with the arg struct.
+	t := template.Must(template.New("code").Parse(srcTemplate))
+	if err := t.Execute(os.Stdout, arg); err != nil {
+		log.Fatalf("Error executing template: %v", err)
+	}
 }
