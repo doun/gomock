@@ -127,7 +127,7 @@ func main() {
 	arg := &templateArg{
 		Pkg: flag.Arg(0),
 		InterfaceNames: make([]string, flag.NArg()-1),
-		OutputPkg: "mock_" + flag.Arg(0),
+		OutputPkg: "mock_" + path.Base(flag.Arg(0)),
 	}
 
 	// Handle non-standard package names.
