@@ -55,6 +55,7 @@ package main
 import (
 	"fmt"
 	"github.com/dsymonds/gomock/generate"
+	"log"
 	"reflect"
 	pkg "{{.Pkg}}"
 )
@@ -65,7 +66,7 @@ func main() {
 
 	{{range $i, $typeName := .InterfaceNames}}
 	var ptr{{$i}} *pkg.{{$typeName}}
-	types[{{$i}}] := reflect.TypeOf(ptr{{$i}}).Elem()
+	types[{{$i}}] = reflect.TypeOf(ptr{{$i}}).Elem()
 	{{end}}
 
 	output, err := generate.GenerateMockSource("{{.OutputPkg}}", types)
