@@ -25,9 +25,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
+	"fmt"
 	"log"
-	"os"
 	"text/template"
 
 	// Make sure goinstall installs the generate package, even though it's not
@@ -55,19 +56,19 @@ import (
 	"fmt"
 	"github.com/dsymonds/gomock/generate"
 	"reflect"
-	pkg "{{.pkg}}"
+	pkg "{{.Pkg}}"
 )
 
 func main() {
-	numTypes := {{.interfaceNames | len}}
+	numTypes := {{.InterfaceNames | len}}
 	types := make([]reflect.Type, numTypes)
 
-	{{range $i, $typeName := .interfaceNames}}
+	{{range $i, $typeName := .InterfaceNames}}
 	var ptr{{$i}} *pkg.{{$typeName}}
 	types[{{$i}}] := reflect.TypeOf(ptr{{$i}}).Elem()
 	{{end}}
 
-	output, err := generate.GenerateMockSource("{{.outputPkg}}", types)
+	output, err := generate.GenerateMockSource("{{.OutputPkg}}", types)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
@@ -77,9 +78,9 @@ func main() {
 `
 
 type templateArg struct {
-	pkg string
-	interfaceNames []string
-	outputPkg string
+	Pkg string
+	InterfaceNames []string
+	OutputPkg string
 }
 
 func main() {
@@ -94,24 +95,29 @@ func main() {
 	}
 
 	arg := &templateArg{
-		pkg: flag.Arg(0),
-		interfaceNames: make([]string, flag.NArg()-1),
-		outputPkg: "mock_" + flag.Arg(0),
+		Pkg: flag.Arg(0),
+		InterfaceNames: make([]string, flag.NArg()-1),
+		OutputPkg: "mock_" + flag.Arg(0),
 	}
 
 	// Handle non-standard package names.
 	if *packageOut != "" {
-		arg.outputPkg = *packageOut
+		arg.OutputPkg = *packageOut
 	}
 
 	// Copy interface names.
 	for i := 1; i < flag.NArg(); i++ {
-		arg.interfaceNames[i-1] = flag.Arg(i)
+		arg.InterfaceNames[i-1] = flag.Arg(i)
 	}
 
 	// Parse the generated code template, and run it with the arg struct.
 	t := template.Must(template.New("code").Parse(srcTemplate))
-	if err := t.Execute(os.Stdout, arg); err != nil {
+
+	buf := new(bytes.Buffer)
+	if err := t.Execute(buf, arg); err != nil {
 		log.Fatalf("Error executing template: %v", err)
 	}
+
+	// TODO(jacobsa): Compile this instead.
+	fmt.Print(buf.String())
 }
