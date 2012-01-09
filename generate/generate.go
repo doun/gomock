@@ -52,19 +52,30 @@ func (g *generator) out() {
 	}
 }
 
+func getPackagePath(t reflect.Type) string {
+	// Work around this bug in Go:
+	//     http://code.google.com/p/go/issues/detail?id=2660
+	var someErrPtr *error
+	if t == reflect.TypeOf(someErrPtr).Elem() {
+		return ""
+	}
+
+	return t.PkgPath()
+}
+
 // packagesUsedByInterface returns the package names used by an interface.
 func packagesUsedByInterface(it reflect.Type) map[string]int {
 	m := make(map[string]int)
 	for i := 0; i < it.NumMethod(); i++ {
 		methodType := it.Method(i).Type
 		for j := 0; j < methodType.NumIn(); j++ {
-			pkgPath := methodType.In(j).PkgPath()
+			pkgPath := getPackagePath(methodType.In(j))
 			if pkgPath != "" {
 				m[pkgPath] = 1
 			}
 		}
 		for j := 0; j < methodType.NumOut(); j++ {
-			pkgPath := methodType.Out(j).PkgPath()
+			pkgPath := getPackagePath(methodType.Out(j))
 			if pkgPath != "" {
 				m[pkgPath] = 1
 			}
