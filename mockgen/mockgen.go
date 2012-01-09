@@ -25,11 +25,14 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"text/template"
 
 	// Make sure goinstall installs the generate package, even though it's not
@@ -87,8 +90,25 @@ type templateArg struct {
 
 // runGoFile compiles and runs a .go file, returning the data written by the
 // program to stdout on success.
-func runGoFile(path string) (stdout string, err error) {
-	return "", errors.New("TODO")
+func runGoFile(path string) (stdout []byte, err error) {
+	outBuf := new (bytes.Buffer)
+	errBuf := new (bytes.Buffer)
+
+	// Run the command.
+	cmd := exec.Command("go", "run", path)
+	cmd.Stdout = outBuf
+	cmd.Stderr = errBuf
+
+	err = cmd.Run()
+	stdout = outBuf.Bytes()
+
+	// If the process exited, we can use the contents of stderr in the returned
+	// error.
+	if exitError, ok := err.(*exec.ExitError); ok && exitError.Exited() {
+		err = errors.New(fmt.Sprintf("go run exited with status %v:\n%s", exitError.ExitStatus(), errBuf.Bytes()))
+	}
+
+	return
 }
 
 func main() {
