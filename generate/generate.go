@@ -58,10 +58,16 @@ func packagesUsedByInterface(it reflect.Type) map[string]int {
 	for i := 0; i < it.NumMethod(); i++ {
 		methodType := it.Method(i).Type
 		for j := 0; j < methodType.NumIn(); j++ {
-			m[methodType.In(j).PkgPath()] = 1
+			pkgPath := methodType.In(j).PkgPath()
+			if pkgPath != "" {
+				m[pkgPath] = 1
+			}
 		}
 		for j := 0; j < methodType.NumOut(); j++ {
-			m[methodType.Out(j).PkgPath()] = 1
+			pkgPath := methodType.Out(j).PkgPath()
+			if pkgPath != "" {
+				m[pkgPath] = 1
+			}
 		}
 	}
 	return m
