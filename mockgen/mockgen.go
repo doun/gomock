@@ -25,7 +25,6 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -89,25 +88,18 @@ type templateArg struct {
 	OutputPkg string
 }
 
-// runGoFile compiles and runs a .go file, returning the data written by the
-// program to stdout on success.
-func runGoFile(filePath string) (stdout []byte, err error) {
-	outBuf := new (bytes.Buffer)
-	errBuf := new (bytes.Buffer)
-
+// runGoFile compiles and runs a .go file, returning the output of the program
+// on success.
+func runGoFile(filePath string) (output []byte, err error) {
 	// Run the command.
 	cmd := exec.Command("go", "run", path.Base(filePath))
-	cmd.Stdout = outBuf
-	cmd.Stderr = errBuf
 	cmd.Dir = path.Dir(filePath)
-
-	err = cmd.Run()
-	stdout = outBuf.Bytes()
+	output, err = cmd.CombinedOutput()
 
 	// If the process exited, we can use the contents of stderr in the returned
 	// error.
 	if exitError, ok := err.(*exec.ExitError); ok && exitError.Exited() {
-		err = errors.New(fmt.Sprintf("go run exited with status %v:\n%s", exitError.ExitStatus(), errBuf.Bytes()))
+		err = errors.New(fmt.Sprintf("go run exited with status %v:\n%s", exitError.ExitStatus(), output))
 	}
 
 	return
