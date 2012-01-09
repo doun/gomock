@@ -33,6 +33,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"text/template"
 
 	// Make sure goinstall installs the generate package, even though it's not
@@ -90,14 +91,16 @@ type templateArg struct {
 
 // runGoFile compiles and runs a .go file, returning the data written by the
 // program to stdout on success.
-func runGoFile(path string) (stdout []byte, err error) {
+func runGoFile(filePath string) (stdout []byte, err error) {
 	outBuf := new (bytes.Buffer)
 	errBuf := new (bytes.Buffer)
 
 	// Run the command.
-	cmd := exec.Command("go", "run", path)
+	cmd := exec.Command("go", "run", path.Base(filePath))
 	cmd.Stdout = outBuf
 	cmd.Stderr = errBuf
+	cmd.Dir = path.Dir(filePath)
+	fmt.Println(cmd)
 
 	err = cmd.Run()
 	stdout = outBuf.Bytes()
@@ -139,12 +142,16 @@ func main() {
 	}
 
 	// Open a temporary file.
-	f, err := ioutil.TempFile("", "mockgen")
+	tempDir, err := ioutil.TempDir("", "mockgen")
+	if err != nil {
+		log.Fatalf("Error creating temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	f, err := os.Create(path.Join(tempDir, "generated.go"))
 	if err != nil {
 		log.Fatalf("Error creating temp file: %v", err)
 	}
-
-	defer os.Remove(f.Name())
 
 	// Parse the generated code template, and run it with the arg struct,
 	// printing to the temporary file.
