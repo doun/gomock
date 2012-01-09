@@ -25,10 +25,11 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"text/template"
 
 	// Make sure goinstall installs the generate package, even though it's not
@@ -111,14 +112,21 @@ func main() {
 		arg.InterfaceNames[i-1] = flag.Arg(i)
 	}
 
-	// Parse the generated code template, and run it with the arg struct.
+	// Open a temporary file.
+	f, err := ioutil.TempFile("", "mockgen")
+	if err != nil {
+		log.Fatalf("Error creating temp file: %v", err)
+	}
+
+	defer os.Remove(f.Name())
+
+	// Parse the generated code template, and run it with the arg struct,
+	// printing to the temporary file.
 	t := template.Must(template.New("code").Parse(srcTemplate))
 
-	buf := new(bytes.Buffer)
-	if err := t.Execute(buf, arg); err != nil {
+	if err := t.Execute(f, arg); err != nil {
 		log.Fatalf("Error executing template: %v", err)
 	}
 
-	// TODO(jacobsa): Compile this instead.
-	fmt.Print(buf.String())
+	// TODO(jacobsa): Compile the file.
 }
