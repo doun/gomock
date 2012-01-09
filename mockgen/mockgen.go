@@ -26,11 +26,13 @@ package main
 
 import (
 	"flag"
-	"github.com/dsymonds/gomock/generate"
-	"io"
 	"log"
-	"reflect"
+	"os"
 	"text/template"
+
+	// Make sure goinstall installs the generate package, even though it's not
+	// used directly here. It's used indirectly through generated code.
+	_ "github.com/dsymonds/gomock/generate"
 )
 
 const (
@@ -92,14 +94,14 @@ func main() {
 	}
 
 	arg := &templateArg{
-		pkg: flag.Arg(0)
-		interfaceNames: make([]string, flag.NArg-1),
-		outputPkg: "mock_" + flag.Arg(0)
+		pkg: flag.Arg(0),
+		interfaceNames: make([]string, flag.NArg()-1),
+		outputPkg: "mock_" + flag.Arg(0),
 	}
 
 	// Handle non-standard package names.
-	if packageOut != "" {
-		arg.outputPkg = packageOut
+	if *packageOut != "" {
+		arg.outputPkg = *packageOut
 	}
 
 	// Copy interface names.
