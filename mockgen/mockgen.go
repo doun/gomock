@@ -25,8 +25,8 @@
 package main
 
 import (
+	"errors"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -85,6 +85,12 @@ type templateArg struct {
 	OutputPkg string
 }
 
+// runGoFile compiles and runs a .go file, returning the data written by the
+// program to stdout on success.
+func runGoFile(path string) (stdout string, err error) {
+	return "", errors.New("TODO")
+}
+
 func main() {
 	flag.Parse()
 
@@ -128,5 +134,9 @@ func main() {
 		log.Fatalf("Error executing template: %v", err)
 	}
 
-	// TODO(jacobsa): Compile the file.
+	// Run the generated program.
+	_, err = runGoFile(f.Name())
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
 }
