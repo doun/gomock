@@ -100,7 +100,6 @@ func runGoFile(filePath string) (stdout []byte, err error) {
 	cmd.Stdout = outBuf
 	cmd.Stderr = errBuf
 	cmd.Dir = path.Dir(filePath)
-	fmt.Println(cmd)
 
 	err = cmd.Run()
 	stdout = outBuf.Bytes()
@@ -162,8 +161,11 @@ func main() {
 	}
 
 	// Run the generated program.
-	_, err = runGoFile(f.Name())
+	output, err := runGoFile(f.Name())
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
+
+	// Print its output.
+	fmt.Printf("%s", output)
 }
