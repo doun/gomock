@@ -14,7 +14,7 @@ func TestRemember(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockIndex := mock_user.NewMockIndex(ctrl)
+	mockIndex := mock_sample.NewMockIndex(ctrl)
 	mockIndex.EXPECT().Put("a", 1)            // literals work
 	mockIndex.EXPECT().Put("b", gomock.Eq(2)) // matchers work too
 
@@ -44,7 +44,7 @@ func TestGrabPointer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockIndex := mock_user.NewMockIndex(ctrl)
+	mockIndex := mock_sample.NewMockIndex(ctrl)
 	mockIndex.EXPECT().Ptr(gomock.Any()).SetArg(0, 7) // set first argument to 7
 
 	i := user.GrabPointer(mockIndex)
@@ -57,7 +57,7 @@ func TestEmbeddedInterface(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockEmbed := mock_user.NewMockEmbed(ctrl)
+	mockEmbed := mock_sample.NewMockEmbed(ctrl)
 	mockEmbed.EXPECT().RegularMethod()
 	mockEmbed.EXPECT().EmbeddedMethod()
 	mockEmbed.EXPECT().ForeignEmbeddedMethod()
