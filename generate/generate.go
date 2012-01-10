@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -52,6 +51,7 @@ func (g *generator) out() {
 	}
 }
 
+// TODO(jacobsa): Delete this if it remains unused.
 func getPackagePath(t reflect.Type) string {
 	// Work around this bug in Go:
 	//     http://code.google.com/p/go/issues/detail?id=2660
@@ -63,31 +63,41 @@ func getPackagePath(t reflect.Type) string {
 	return t.PkgPath()
 }
 
-// packagesUsedByInterface returns the package names used by an interface.
-func packagesUsedByInterface(it reflect.Type) map[string]int {
-	m := make(map[string]int)
+// typesUsedByInterface returns a list of all types used by an interface.
+func typesUsedByInterface(it reflect.Type) []reflect.Type {
+	l := make([]reflect.Type, 0)
+
 	for i := 0; i < it.NumMethod(); i++ {
 		methodType := it.Method(i).Type
+
 		for j := 0; j < methodType.NumIn(); j++ {
-			pkgPath := getPackagePath(methodType.In(j))
-			if pkgPath != "" {
-				m[pkgPath] = 1
-			}
+			l = append(l, methodType.In(j))
 		}
+
 		for j := 0; j < methodType.NumOut(); j++ {
-			pkgPath := getPackagePath(methodType.Out(j))
-			if pkgPath != "" {
-				m[pkgPath] = 1
-			}
+			l = append(l, methodType.Out(j))
 		}
 	}
-	return m
+
+	return l
 }
 
-func (g *generator) ScanImports(types []reflect.Type) {
-	for _, it := range types {
-		for pkg := range packagesUsedByInterface(it) {
-			g.imports[path.Base(pkg)] = pkg
+// getPackageIdentifier returns the package identifier for the supplied type,
+// or the empty string if there is none.
+func getPackageIdentifier(t reflect.Type) string {
+	components := strings.Split(t.String(), ".")
+	switch len(components) {
+	case 1: return ""
+	case 2: return components[0]
+	}
+
+	panic("Unexpected type string: " + t.String())
+}
+
+func (g *generator) ScanImports(interfaces []reflect.Type) {
+	for _, it := range interfaces {
+		for _, t := range typesUsedByInterface(it) {
+			g.imports[getPackageIdentifier(t)] = t.PkgPath()
 		}
 	}
 }
