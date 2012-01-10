@@ -238,6 +238,7 @@ func typeString(t reflect.Type) string {
 // Represents a flattened list of parameters (either arguments or return values).
 type parameterList struct {
 	name, t []string // name and type of each arg (name may be empty)
+	variadicElemType reflect.Type
 }
 
 // A string suitable for use as a method argument.
@@ -247,6 +248,12 @@ func (p *parameterList) argumentString() string {
 		// XXX: doesn't handle anonymous params.
 		strs[i] = fmt.Sprintf("%v %v", p.name[i], t)
 	}
+
+	if p.variadicElemType != nil {
+		numStrs := len(strs)
+		strs[numStrs-1] = fmt.Sprintf("%v ...%v", p.name[numStrs-1], p.variadicElemType)
+	}
+
 	return strings.Join(strs, ", ")
 }
 
@@ -255,6 +262,10 @@ func buildParameterList(ft reflect.Type) *parameterList {
 	params := &parameterList{
 		name: make([]string, n),
 		t:    make([]string, n),
+	}
+
+	if ft.IsVariadic() {
+		params.variadicElemType = ft.In(n-1).Elem()
 	}
 
 	for i := 0; i < n; i++ {
