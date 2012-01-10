@@ -85,6 +85,11 @@ func typesUsedByInterface(it reflect.Type) []reflect.Type {
 // getPackageIdentifier returns the package identifier for the supplied type,
 // or the empty string if there is none.
 func getPackageIdentifier(t reflect.Type) string {
+	// Is this a built-in type?
+	if t.PkgPath() == "" {
+		return ""
+	}
+
 	components := strings.Split(t.String(), ".")
 	switch len(components) {
 	case 1: return ""
@@ -97,7 +102,10 @@ func getPackageIdentifier(t reflect.Type) string {
 func (g *generator) ScanImports(interfaces []reflect.Type) {
 	for _, it := range interfaces {
 		for _, t := range typesUsedByInterface(it) {
-			g.imports[getPackageIdentifier(t)] = t.PkgPath()
+			identifier := getPackageIdentifier(t)
+			if identifier != "" {
+				g.imports[identifier] = t.PkgPath()
+			}
 		}
 	}
 }
