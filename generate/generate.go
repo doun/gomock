@@ -63,20 +63,36 @@ func getPackagePath(t reflect.Type) string {
 	return t.PkgPath()
 }
 
+// typesUsedByFunction returns a list of all types used by a function.
+func typesUsedByFunction(ft reflect.Type) []reflect.Type {
+	l := make([]reflect.Type, 0)
+
+	// Handle parameters.
+	for i := 0; i < ft.NumIn(); i++ {
+		l = append(l, ft.In(i))
+	}
+
+	// Handle return values.
+	for i := 0; i < ft.NumIn(); i++ {
+		l = append(l, ft.In(i))
+	}
+
+	// Special case: recurse for any type that is itself a function.
+	for _, t := range l {
+		if t.Kind() == reflect.Func {
+			l = append(l, typesUsedByFunction(t)...)
+		}
+	}
+
+	return l
+}
+
 // typesUsedByInterface returns a list of all types used by an interface.
 func typesUsedByInterface(it reflect.Type) []reflect.Type {
 	l := make([]reflect.Type, 0)
 
 	for i := 0; i < it.NumMethod(); i++ {
-		methodType := it.Method(i).Type
-
-		for j := 0; j < methodType.NumIn(); j++ {
-			l = append(l, methodType.In(j))
-		}
-
-		for j := 0; j < methodType.NumOut(); j++ {
-			l = append(l, methodType.Out(j))
-		}
+		l = append(l, typesUsedByFunction(it.Method(i).Type)...)
 	}
 
 	return l
