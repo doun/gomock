@@ -63,25 +63,43 @@ func getPackagePath(t reflect.Type) string {
 	return t.PkgPath()
 }
 
+// typesUsedByTypes returns a list of all types transitively referenced by the
+// supplied type. For example, it recurses for function parameters/return
+// values, pointer elements, and so on.
+func typesUsedByType(t reflect.Type) []reflect.Type {
+	l := make([]reflect.Type, 1)
+	l[0] = t
+
+	switch t.Kind() {
+	case reflect.Array, reflect.Chan, reflect.Ptr, reflect.Slice:
+		l = append(l, typesUsedByType(t.Elem())...)
+
+	case reflect.Func:
+		l = append(l, typesUsedByFunction(t)...)
+
+	case reflect.Interface:
+		l = append(l, typesUsedByInterface(t)...)
+
+	case reflect.Map:
+		l = append(l, typesUsedByType(t.Key())...)
+		l = append(l, typesUsedByType(t.Elem())...)
+	}
+
+	return l
+}
+
 // typesUsedByFunction returns a list of all types used by a function.
 func typesUsedByFunction(ft reflect.Type) []reflect.Type {
 	l := make([]reflect.Type, 0)
 
 	// Handle parameters.
 	for i := 0; i < ft.NumIn(); i++ {
-		l = append(l, ft.In(i))
+		l = append(l, typesUsedByType(ft.In(i))...)
 	}
 
 	// Handle return values.
-	for i := 0; i < ft.NumIn(); i++ {
-		l = append(l, ft.In(i))
-	}
-
-	// Special case: recurse for any type that is itself a function.
-	for _, t := range l {
-		if t.Kind() == reflect.Func {
-			l = append(l, typesUsedByFunction(t)...)
-		}
+	for i := 0; i < ft.NumOut(); i++ {
+		l = append(l, typesUsedByType(ft.Out(i))...)
 	}
 
 	return l
@@ -92,7 +110,7 @@ func typesUsedByInterface(it reflect.Type) []reflect.Type {
 	l := make([]reflect.Type, 0)
 
 	for i := 0; i < it.NumMethod(); i++ {
-		l = append(l, typesUsedByFunction(it.Method(i).Type)...)
+		l = append(l, typesUsedByType(it.Method(i).Type)...)
 	}
 
 	return l
